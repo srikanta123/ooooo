@@ -1,0 +1,928 @@
+/*This is the confidential, unpublished property of AT&T.  Receipt or possession of it does not convey any rights to 
+divulge, reproduce, use, or allow others to use it without the specific written authorization of AT&T, and use must conform
+ strictly to the license agreement between user and AT&T. Copyright 2017 AT&T. All rights reserved */
+/**
+ * Controller for ConsolNotes : Yogesh Aidasani (ya2469)
+ */
+
+app.controller('viewAllNotes', ['$scope','$http','$window', function($scope, $http, $window) {
+	$scope.worknoteids=[];
+	$scope.compnoteids=[];
+	$scope.compnoteType=[];
+	$scope.compnoteNoteAddInfo=[];
+	
+	$scope.orderByField=['category','addedOnSort'];
+	$scope.reversedSort = true;
+	
+	 $scope.categoryFilter={'FD_EXPORT':'Frontdoor - Export', 
+			 'FD_CONN': 'Frontdoor - Connectivity',	
+			 'FD_SECURITY':'Frontdoor - Security',
+			 'FD_SEC_DASH':'Frontdoor - Security Dashboard', 
+			 'EXP_DASH':'Export Dashboard', 
+			 'CONN_DASH':'Connectivity Dashboard',
+			 'CLIENT_APP':'Client - Application',
+			 'CLIENT_SOFT':'Client - Software',
+			 'CLIENT_CONN':'Client - Connectivity',
+			'CLIENT_WORK':'Client - Workgroup',
+			'CLIENT_VIEW':'Request Assistance - Client View', 	
+			'FD_WORKGRP':'Frontdoor-Workgroup',
+			'application':'Security',
+			'software': 'Export',
+			'Conn': 'Connectivity',
+			'WrkQueue' : 'FrontDoor'
+	};
+	$scope.pleaseWait = true;
+	$scope.btn_flag = true;
+	
+	$scope.check = true;
+	$scope.show = false;
+	$scope.deleteUsers = true;
+	$scope.role = null;
+
+	    $scope.session = {};
+	    
+	    $scope.session.urlId = $window.sessionStorage.getItem("urlId");
+	    $scope.wgId = $window.sessionStorage.getItem("wgId");
+	    $scope.session.workGrpId =  $window.sessionStorage.getItem("wgId");
+	    $scope.noteclass = {'userId':document.getElementById("hdnUserId").value,'workGroupID':document.getElementById("hdnWrkGrpId").value};
+	   
+	    
+	$http({method: 'GET',url: 'getNotesCategory.do',params: {str: JSON.stringify($scope.noteclass)
+		}}).then(function successCallback(response) {
+			$scope.pleaseWait = false;
+
+	   $scope.data = response.data;
+	   
+	  }, function errorCallback(response) {
+		  $scope.pleaseWait = false;
+	  })
+	  
+	$scope.getData=function(){  
+		
+		 $scope.collapsenoteclass = {'userId':document.getElementById("hdnUserId").value,
+		    		'workGroupID':document.getElementById("hdnWrkGrpId").value, 'security':document.getElementById("hdnSecurity").value, 'export':document.getElementById("hdnExport").value, 'connectivity':document.getElementById("hdnConnectivity").value, 'frontDoor':document.getElementById("hdnFrontdoor").value, 'client':document.getElementById("hdnClient").value, 'iRAClient':document.getElementById("hdnRAClient").value};
+		    
+	  $http({method: 'GET',url: 'getCollapsedNotes.do',params: {str: angular.toJson($scope.collapsenoteclass)
+		}}).then(function successCallback(response) {
+			$scope.pleaseWait = false;
+
+	   $scope.collapsedNotesData = response.data;
+	   
+	   //console.log($scope.collapsedNotesData);
+	   
+	  }, function errorCallback(response) {
+		  $scope.pleaseWait = false;
+	  })
+	}
+	
+	$scope.getData2=function(){  
+		
+		 $scope.expandnoteclass = {'userId':document.getElementById("hdnUserId").value,
+		    		'workGroupID':document.getElementById("hdnWrkGrpId").value, 'security':document.getElementById("hdnSecurity").value, 'export':document.getElementById("hdnExport").value, 'connectivity':document.getElementById("hdnConnectivity").value, 'frontDoor':document.getElementById("hdnFrontdoor").value};
+		 alert("hi");
+	  $http({method: 'GET',url: 'getExpandedNotes.do',params: {str1: angular.toJson($scope.expandnoteclass)
+		}}).then(function successCallback(response) {
+			$scope.pleaseWait = false;
+			var totalItems=response.data;
+			var alldata=GetPager(totalItems, currentPage, pageSize);
+			consol.log("allthedata",alldata);
+			alert("hi");
+			
+			//GetPager(totalItems, currentPage, pageSize)
+	  /* $scope.expandedNotesData = response.data;*/
+			 $scope.expandedNotesData = alldata;
+	   //console.log($scope.expandedNotesData);
+	   
+	  }, function errorCallback(response) {
+		  $scope.pleaseWait = false;
+	  })
+	}
+	
+	  function GetPager(totalItems, currentPage, pageSize) {
+          // default to first page
+          currentPage = currentPage || 1;
+
+          // default page size is 10
+          pageSize = pageSize || 10;
+
+          // calculate total pages
+          var totalPages = Math.ceil(totalItems / pageSize);
+
+          var startPage, endPage;
+          if (totalPages <= 10) {
+              // less than 10 total pages so show all
+              startPage = 1;
+              endPage = totalPages;
+          } else {
+              // more than 10 total pages so calculate start and end pages
+              if (currentPage <= 6) {
+                  startPage = 1;
+                  endPage = 10;
+              } else if (currentPage + 4 >= totalPages) {
+                  startPage = totalPages - 9;
+                  endPage = totalPages;
+              } else {
+                  startPage = currentPage - 5;
+                  endPage = currentPage + 4;
+              }
+          }
+
+          // calculate start and end item indexes
+          var startIndex = (currentPage - 1) * pageSize;
+          var endIndex = Math.min(startIndex + pageSize - 1, totalItems - 1);
+
+          // create an array of pages to ng-repeat in the pager control
+          var pages = _.range(startPage, endPage + 1);
+
+          // return object with all pager properties required by the view
+          return {
+              totalItems: totalItems,
+              currentPage: currentPage,
+              pageSize: pageSize,
+              totalPages: totalPages,
+              startPage: startPage,
+              endPage: endPage,
+              startIndex: startIndex,
+              endIndex: endIndex,
+              pages: pages
+          };
+      }
+	  function setPage(page){
+		  
+		  if(page<1||page>alldata.totalPages){
+			  return
+		  }
+		  alldata=GetPager(totalItems, currentPage, pageSize);
+		  vm.pager=PagerService.GetPager(vm.dummyitems.length,page);
+		  vm.items=vm.dummyItems.slice(vm.pager.startIndex,vm.pager.endIndex+1);
+	  
+}
+	  function ExampleController(PagerService) {
+	        var vm = this;
+
+	        vm.dummyItems = _.range(1, 151); // dummy array of items to be paged
+	        vm.pager = {};
+	        vm.setPage = setPage;
+
+	        initController();
+
+	        function initController() {
+	            // initialize to page 1
+	            vm.setPage(1);
+	        }
+
+	        function setPage(page) {
+	            if (page < 1 || page > vm.pager.totalPages) {
+	                return;
+	            }
+
+	            // get pager object from service
+	            vm.pager = PagerService.GetPager(vm.dummyItems.length, page);
+
+	            // get current page of items
+	            vm.items = vm.dummyItems.slice(vm.pager.startIndex, vm.pager.endIndex + 1);
+	        }
+	    }
+	 
+	$scope.fnSubmit=function (chType){
+		thisForm = document.forms[0];
+			//To get URL variables
+			var allURLvariables = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+			var wrkGrpTemp = allURLvariables[0].split('=');
+			var frmPageTemp = allURLvariables[1].split('=');
+			var wrkGrp = wrkGrpTemp[1];
+			var frmPage = frmPageTemp[1];
+			thisForm.hdnload.value = 1;
+			if (chType=='Frontdoor'){
+				fnShowFD();
+				if(document.getElementById('chkSecurity').checked == true){
+					fnShowSec();
+					}
+				if(document.getElementById('chkExport').checked == true){
+					fnShowExp();
+					}
+				if(document.getElementById('chkConn').checked == true){
+					fnShowConn();
+					}
+				if(document.getElementById('chkRQClient').checked == true){
+					fnShowOCEClient();
+					}
+				if(document.getElementById('chkClient').checked == true){
+					fnShowClient();
+					}		
+			}
+			if (chType=='Security'){
+				fnShowSec();
+				if(document.getElementById('chkFrontdoor').checked == true){
+					fnShowFD();
+					}
+				if(document.getElementById('chkExport').checked == true){
+					fnShowExp();
+					}
+				if(document.getElementById('chkConn').checked == true){
+					fnShowConn();
+					}
+				if(document.getElementById('chkRQClient').checked == true){
+					fnShowOCEClient();
+					}
+				if(document.getElementById('chkClient').checked == true){
+					fnShowClient();
+					}
+			}
+			if (chType=='Export'){
+				fnShowExp();
+				if(document.getElementById('chkSecurity').checked == true){
+					fnShowSec();
+					}
+				if(document.getElementById('chkFrontdoor').checked == true){
+					fnShowFD();
+					}
+				if(document.getElementById('chkConn').checked == true){
+					fnShowConn();
+					}
+				if(document.getElementById('chkRQClient').checked == true){
+					fnShowOCEClient();
+					}
+				if(document.getElementById('chkClient').checked == true){
+					fnShowClient();
+					}
+			}
+			if (chType=='Connectivity'){
+				fnShowConn();
+				if(document.getElementById('chkFrontdoor').checked == true){
+					fnShowFD();
+					}
+				if(document.getElementById('chkExport').checked == true){
+					fnShowExp();
+					}
+				if(document.getElementById('chkSecurity').checked == true){
+					fnShowSec();
+					}
+				if(document.getElementById('chkRQClient').checked == true){
+					fnShowOCEClient();
+					}
+				if(document.getElementById('chkClient').checked == true){
+					fnShowClient();
+					}
+			}
+			if (chType=='RAClient'){
+				fnShowOCEClient();
+				if(document.getElementById('chkFrontdoor').checked == true){
+					fnShowFD();
+					}
+				if(document.getElementById('chkExport').checked == true){
+					fnShowExp();
+					}
+				if(document.getElementById('chkConn').checked == true){
+					fnShowConn();
+					}
+				if(document.getElementById('chkSecurity').checked == true){
+					fnShowSec();
+					}
+				if(document.getElementById('chkClient').checked == true){
+					fnShowClient();
+					}
+			}
+			if (chType=='Client'){
+				fnShowClient();
+				if(document.getElementById('chkFrontdoor').checked == true){
+					fnShowFD();
+					}
+				if(document.getElementById('chkExport').checked == true){
+					fnShowExp();
+					}
+				if(document.getElementById('chkConn').checked == true){
+					fnShowConn();
+					}
+				if(document.getElementById('chkRQClient').checked == true){
+					fnShowOCEClient();
+					}
+				if(document.getElementById('chkSecurity').checked == true){
+					fnShowSec();
+					}
+			}
+			//thisForm.action=";
+			//document.submit();
+			//window.location.href= "Notes.do?workgrp=" +wrkGrp+"&frmpage=" +frmPage;
+			//document.forms[0].submit();
+			 /*$scope.collapsenoteclass = {'userId':document.getElementById("hdnUserId").value,
+			    		'workGroupID':document.getElementById("hdnWrkGrpId").value, 'security':document.getElementById("hdnSecurity").value, 'export':document.getElementById("hdnExport").value, 'connectivity':document.getElementById("hdnConnectivity").value, 'frontDoor':document.getElementById("hdnFrontdoor").value, 'client':document.getElementById("hdnClient").value, 'RAClient':document.getElementById("hdnRAClient").value};
+			    //console.log( $scope.collapsenoteclass);
+			    //console.log(JSON.stringify($scope.collapsenoteclass));*/
+			$scope.getData();
+			$scope.getData2();
+				
+
+
+		}
+	
+	
+	//To delete Selected Notes
+	$scope.fnDelete = function(){
+		thisForm = document.forms[0];
+		//To get URL variables
+		var allURLvariables = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+		var wrkGrpTemp = allURLvariables[0].split('=');
+		var frmPageTemp = allURLvariables[1].split('=');
+		var wrkGrp = wrkGrpTemp[1];
+		var frmPage = frmPageTemp[1];
+		var isCheckedWrk = 0;
+		//Release0616:Added for not to execute onload function :BY Imran
+		//thisForm.hdnload.value = 1;
+		if($scope.isClient=='0'){
+			fnShowFD();
+			fnShowSec();
+			fnShowExp();
+			fnShowConn();
+			fnShowOCEClient();
+		}
+		fnShowClient();
+		//Release0616:End Change
+		arrWrkNote = new Array(); 
+		arrWrkNote = document.getElementsByName('chkDelWrk');
+		
+		//console.log(arrWrkNote)
+		//To get list of workgroup notes
+		for(var i = 0;i<arrWrkNote.length;i++){
+			if(arrWrkNote[i].checked == true){		
+				$scope.worknoteids.push(Number(arrWrkNote[i].value));
+				/*if(thisForm.hdnDelWrkNote.value == ""){
+						thisForm.hdnDelWrkNote.value = arrWrkNote[i].value;	
+				}
+				else{
+					thisForm.hdnDelWrkNote.value = thisForm.hdnDelWrkNote.value + "," + arrWrkNote[i].value;
+				}*/
+				isCheckedWrk = 1;
+			}
+		}
+		
+		
+		
+		var isCheckedComp = 0;
+		arrCompNote = new Array();
+		arrCompNote = document.getElementsByName('chkDelComp');
+		
+		for(var i = 0;i<arrCompNote.length;i++){
+			if(arrCompNote[i].checked == true){
+				temp = String(arrCompNote[i].value);
+				$scope.compnoteids.push(Number(temp.substr(temp.lastIndexOf("_*_")+3,temp.length)));
+				$scope.compnoteType.push(temp.substr(0,temp.indexOf("_*_")));
+				$scope.compnoteNoteAddInfo.push(temp.substring(temp.indexOf("_*_")+3,temp.lastIndexOf("_*_")));
+				/*if(thisForm.hdnDelCompNoteType.value == ""){
+					//These 3 variables are needed because for the Category Conn we have to decide that note belong to indirect or direct connectivity, as they have diff tables of note.
+					thisForm.hdnDelCompNoteType.value = temp.substr(0,temp.indexOf("_*_"));
+					thisForm.hdnDelCompNoteAddInfo.value = temp.substring(temp.indexOf("_*_")+3,temp.lastIndexOf("_*_"));
+					thisForm.hdnDelCompNoteId.value = temp.substr(temp.lastIndexOf("_*_")+3,temp.length);
+				}
+				else{
+					thisForm.hdnDelCompNoteType.value = thisForm.hdnDelCompNoteType.value  + "," + temp.substr(0,temp.indexOf("_*_"));
+					thisForm.hdnDelCompNoteAddInfo.value = thisForm.hdnDelCompNoteAddInfo.value  + "," + temp.substring(temp.indexOf("_*_")+3,temp.lastIndexOf("_*_"));
+					thisForm.hdnDelCompNoteId.value = thisForm.hdnDelCompNoteId.value  + "," + temp.substr(temp.lastIndexOf("_*_")+3,temp.length);
+				}*/
+				isCheckedComp = 1;
+			}
+		}
+		
+		
+		if($scope.worknoteids.length < 0)
+		{
+			$scope.worknoteids=null;
+		}
+
+		if($scope.compnoteids.length < 0)
+		{
+			$scope.compnoteids=null;
+		}
+	
+		if($scope.compnoteNoteAddInfo.length < 0)
+		{
+			$scope.compnoteNoteAddInfo=null;
+		}
+		
+		if($scope.compnoteType.length < 0)
+		{
+			$scope.compnoteType=null;
+		}
+
+		
+
+		
+		
+		if(isCheckedWrk == 0 && isCheckedComp == 0){
+		alert('Please select atleast one note to delete');
+		return;
+		}
+		
+		
+
+		$scope.deleteNoteclass = {'workGrpIDList':$scope.worknoteids,'hdnDelCompNoteType':$scope.compnoteType, 'hdnDelCompNoteId':$scope.compnoteids, 'hdnDelCompNoteAddInfo':$scope.compnoteNoteAddInfo};
+		
+		    //console.log($scope.deleteNoteclass);
+		    
+	  $http({method: 'GET',url: 'DeleteNote.do',params: {deleteStr: angular.toJson($scope.deleteNoteclass)
+		}}).then(function successCallback(response) {
+			$scope.pleaseWait = false;
+			$scope.getData();
+			$scope.getData2();
+			fnShowMode(0);
+			
+			document.getElementById('txtNewNote').focus();
+			
+
+	   $scope.deletedNotesData = response.data;
+	   
+	   //console.log($scope.deletedNotesData);
+	   
+	  }, function errorCallback(response) {
+		  $scope.pleaseWait = false;
+	  })
+	  
+	  
+	  
+	}
+	
+	
+	//to save a new workgroup note
+	$scope.fnSave=function (){
+		thisForm = document.forms[0];
+		//To get URL variables
+		var allURLvariables = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+		var wrkGrpTemp = allURLvariables[0].split('=');
+		var frmPageTemp = allURLvariables[1].split('=');
+		var wrkGrp = wrkGrpTemp[1];
+		var frmPage = frmPageTemp[1];
+		//Release0616:Added for not to execute onload function :BY Imran
+		//thisForm.hdnload.value = 1;
+		if($scope.isClient=='0'){
+			fnShowFD();
+			fnShowSec();
+			fnShowExp();
+			fnShowConn();
+			fnShowOCEClient();
+		}
+		fnShowClient();
+		//Release0616:End Change
+		var txtnote = document.getElementById('txtNewNote').value;
+		
+		if(document.getElementById('selCategory').value == -1){
+			alert('Select a Category to add Note');
+			document.getElementById('selCategory').focus();
+			return;			
+		}
+		//Check whether user is trying to enter empty note | ReleaseSep'14 | By Dakshata Gaikar
+		if(txtnote =='' || txtnote == null){
+			alert('Please enter note');
+			document.getElementById('txtNewNote').focus();
+			return;
+		}
+		//ReleaseSep'14 | Alert when Request Assistance-OCE View or Request Assistance-Client View checkbox is checked and no request id is selected | By Dakshata Gaikar
+		
+		if(document.getElementById('chkRQOCELead') != null){
+		if(document.getElementById('selCategory').value == 'RA_OCE' || document.getElementById('selCategory').value == 'RA_CLIENT'){
+			if(document.getElementById('selRequestId').value == -1){
+				alert('Select a Request Id to add Note');
+				document.getElementById('selRequestId').focus();
+				return;
+			}
+		}
+		}
+		else{
+			if(document.getElementById('selCategory').value == 'RA_CLIENT'){
+				if(document.getElementById('selRequestId').value == -1){
+					alert('Select a Request Id to add Note');
+					document.getElementById('selRequestId').focus();
+					return;
+				}
+			}
+		}
+			
+		$scope.saveNoteclass = {'userId':document.getElementById("hdnUserId").value,'category':document.getElementById('selCategory').value, 'requestId':null, 'note':txtnote, 'workGroupID':document.getElementById("hdnWrkGrpId").value};
+		
+	    //console.log($scope.saveNoteclass);
+	    
+  $http({method: 'GET',url: 'SaveNewNote.do',params: {saveStr: angular.toJson($scope.saveNoteclass)
+	}}).then(function successCallback(response) {
+		$scope.pleaseWait = false;
+		
+		$scope.getData();
+		$scope.getData2();
+		fnShowMode(0);
+		
+		document.getElementById('txtNewNote').value="";
+
+   $scope.savedNotesData = response.data;
+   
+   //console.log($scope.savedNotesData);
+   
+  }, function errorCallback(response) {
+	  $scope.pleaseWait = false;
+  })
+  
+  
+	}
+
+}]);
+
+
+//To display/Hide Component Level notes 
+function fnShowMode(flag)
+{
+	if(flag == 1){
+		document.getElementById('modeType').innerHTML = "<a  onClick='fnShowMode(0);' style='cursor: pointer;'>Collapse Mode</a>";
+		document.getElementById('tblComponetLvlNote').style.display = 'inline';
+		
+		
+		fnSubmitAll();
+	
+		
+	}
+	else {
+		document.getElementById('modeType').innerHTML = "<a   onClick='fnShowMode(1);' style='cursor: pointer;'>Expand Mode</a>";
+		document.getElementById('tblComponetLvlNote').style.display = 'none';
+	}
+}
+//Release0616:Function for component level notes:By Imran
+function fnSubmitAll(){
+	var allURLvariables = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+	var wrkGrpTemp = allURLvariables[0].split('=');
+	var frmPageTemp = allURLvariables[1].split('=');
+	var wrkGrp = wrkGrpTemp[1];
+	var frmPage = frmPageTemp[1];
+	thisForm.hdnload.value = 1;
+
+	//To Show Component Level Notes corresponding to Selected Group
+	fnShowFD();
+	fnShowSec();
+	fnShowExp();
+	fnShowConn();
+	
+	thisForm.action = "ConsolNote_Template.cfm?workgrp=" +wrkGrp+"&frmpage=" +frmPage;
+	thisForm.submit();
+}
+
+//This function runs when page is loaded for first time. Use to Show notes based on the ROLE of User 
+function displayNotes(){
+	//Release0616:Modified for design issue:By IMran
+	thisForm = document.forms[0];
+	var allURLvariables = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+	var wrkGrpTemp = allURLvariables[0].split('=');
+	var frmPageTemp = allURLvariables[1].split('=');
+	var wrkGrp = wrkGrpTemp[1];
+	var frmPage = frmPageTemp[1];
+	thisForm.hdnload.value = 1;
+	
+		
+	if(document.getElementById('allNotes')){ //Because Client should be able to see NOTES of only Client group
+		fnShowFD();
+		fnShowSec();
+		fnShowExp();
+		fnShowConn();
+	}
+	fnShowClient();
+	
+	thisForm.action = "ConsolNote_Template.cfm?workgrp=" +wrkGrp+"&frmpage=" +frmPage;
+	thisForm.submit();
+	//Release0616:End Change
+
+}
+
+//To Show/Hide Notes of Front Door Group 
+function fnShowFD()
+{
+	
+	thisForm = document.forms[0];
+	/*console.log(document.getElementById('hdnIsClient').value) document.getElementById('hdnIsClient').value=="0" && */
+	if(document.getElementById('chkFrontdoor').checked == true){
+		thisForm.hdnFrontdoor.value = 1;
+		
+	}
+	else{
+		thisForm.hdnFrontdoor.value = 0;
+	}
+}
+
+//To Display/Hide notes of Security Group
+function fnShowSec()
+{
+	
+	thisForm = document.forms[0];
+	if(document.getElementById('chkSecurity').checked == true){
+		thisForm.hdnSecurity.value = 1;
+		
+	}
+	else{
+		thisForm.hdnSecurity.value = 0;
+		}
+}
+
+//To show notes of Export and FrontDoor Export Category
+function fnShowExp()
+{
+	
+	thisForm = document.forms[0];
+	
+	if(document.getElementById('chkExport').checked == true){
+		thisForm.hdnExport.value = 1;
+	}
+	else{
+		thisForm.hdnExport.value = 0;	
+		}
+}
+
+//To Show notes of Connectivity DashBoard and FrontDoor-Connectivity category
+function fnShowConn()
+{
+	
+	thisForm = document.forms[0];
+	
+	if(document.getElementById('chkConn').checked == true){
+		thisForm.hdnConnectivity.value = 1;
+		
+	}
+	else{
+		thisForm.hdnConnectivity.value = 0;
+		}
+}
+//To show Client - * Category Notes
+function fnShowClient()
+{
+	thisForm = document.forms[0];
+	if(document.getElementById('chkClient').checked == true){
+		thisForm.hdnClient.value = 1;
+		
+	}
+	else{
+		thisForm.hdnClient.value = 0;
+			}
+	
+}
+
+
+//to save a new workgroup note
+function fnSave(){
+	thisForm = document.forms[0];
+	//To get URL variables
+	var allURLvariables = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+	var wrkGrpTemp = allURLvariables[0].split('=');
+	var frmPageTemp = allURLvariables[1].split('=');
+	var wrkGrp = wrkGrpTemp[1];
+	var frmPage = frmPageTemp[1];
+	//Release0616:Added for not to execute onload function :BY Imran
+	//thisForm.hdnload.value = 1;
+	
+	fnShowFD();
+	fnShowSec();
+	fnShowExp();
+	fnShowConn();
+	fnShowOCEClient();
+	
+	fnShowClient();
+	//Release0616:End Change
+	var txtnote = document.getElementById('txtNewNote').value;
+	
+	if(document.getElementById('selCategory').value == -1){
+		alert('Select a Category to add Note');
+		document.getElementById('selCategory').focus();
+		return;			
+	}
+	//Check whether user is trying to enter empty note | ReleaseSep'14 | By Dakshata Gaikar
+	if(txtnote =='' || txtnote == null){
+		alert('Please enter note');
+		document.getElementById('txtNewNote').focus();
+		return;
+	}
+	//ReleaseSep'14 | Alert when Request Assistance-OCE View or Request Assistance-Client View checkbox is checked and no request id is selected | By Dakshata Gaikar
+	
+	if(document.getElementById('chkRQOCELead') != null){
+	if(document.getElementById('selCategory').value == 'RA_OCE' || document.getElementById('selCategory').value == 'RA_CLIENT'){
+		if(document.getElementById('selRequestId').value == -1){
+			alert('Select a Request Id to add Note');
+			document.getElementById('selRequestId').focus();
+			return;
+		}
+	}
+	}
+	else{
+		if(document.getElementById('selCategory').value == 'RA_CLIENT'){
+			if(document.getElementById('selRequestId').value == -1){
+				alert('Select a Request Id to add Note');
+				document.getElementById('selRequestId').focus();
+				return;
+			}
+		}
+	}
+		
+	document.getElementById('hdnPageAction').value = "save";
+	thisForm.action = "ConsolNote_Template.cfm?workgrp=" +wrkGrp+"&frmpage=" +frmPage;
+	thisForm.submit();
+}
+
+
+
+//To show notes of Request Assistance - OCE View
+function fnShowOCELead()
+{
+	var i;				
+	//Request Assistance - OCE View Category notes can be shown when Request Assistance - OCE View is checked
+	if(document.getElementById('chkRQOCELead').checked == true){
+			arrRQOCE = new Array();
+			arrRQOCE = document.getElementsByName('row_OCERQDash');			
+			for(i = 0;i<arrRQOCE.length;i++){
+				arrRQOCE[i].style.display = 'inline';											
+			}						
+		}
+	else{						
+			arrRQOCE = new Array();
+			arrRQOCE = document.getElementsByName('row_OCERQDash');
+			for(i = 0;i<arrRQOCE.length;i++){
+				arrRQOCE[i].style.display = 'none';													
+			}		
+		}
+		fnDisplayRequestId();			
+}
+
+
+	//To show notes of Request Assistance - OCE View
+function fnShowOCEClient()
+{
+	
+	//var i;
+	//Release0616:Commented for design issue:By IMran
+	thisForm = document.forms[0];
+	//Request Assistance - Client View Category notes can be shown when Request Assistance - Client View is checked
+	if(document.getElementById('chkRQClient').checked == true){
+		thisForm.hdnRAClient.value = 1;
+		
+		//Release0616:Commented for design issue:By IMran
+		/*arrRQClient = new Array();
+		arrRQClient = document.getElementsByName('row_ClientRQDash');			
+		for(i = 0;i<arrRQClient.length;i++){
+			arrRQClient[i].style.display = 'inline';				
+		}	*/	
+			
+		}
+	else{	
+	thisForm.hdnRAClient.value = 0;
+	
+
+	//Release0616:Commented for design issue:By IMran			
+		/*arrRQClient = new Array();
+		arrRQClient = document.getElementsByName('row_ClientRQDash');
+		for(i = 0;i<arrRQClient.length;i++){
+			arrRQClient[i].style.display = 'none';				
+		}*/					
+	}
+	//fnDisplayRequestId();
+	//thisForm.action = "ConsolNote_Template.cfm?workgrp=" +wrkGrp+"&frmpage=" +frmPage;
+	//thisForm.submit();
+	//Release0616:End Change
+}
+
+
+//Function to show Request Id column on check of Request Assistance-OCE View or Request Assistance-Client View
+function fnDisplayRequestId(){
+	//Release0616:Commented  chkRQOCELead part:By IMran
+	//if(document.getElementById('chkRQOCELead') != null){			
+		if(document.getElementById('chkRQClient').checked == true /*||  document.getElementById('chkRQOCELead').checked == true*/)
+		{
+			document.getElementById('RequestIdColWidth').style.width = 50;	
+		}
+		else{
+			document.getElementById('RequestIdColWidth').style.width = 0;	
+		}
+	//}
+	/*else{
+		if(document.getElementById('chkRQClient').checked == true)
+		{
+			document.getElementById('RequestIdColWidth').style.width = 50;	
+		}
+		else{
+			document.getElementById('RequestIdColWidth').style.width = 0;	
+		}
+	}	*/	
+	//Release0616:Commenting end
+}
+
+function fnDisableReq(){
+	var cat = document.getElementById("selCategory").value;
+	if(document.getElementById('chkRQOCELead') != null)
+	{
+		if(cat == 'RA_OCE' || cat == 'RA_CLIENT')
+		{
+			document.getElementById("selRequestId").disabled = false;
+			document.getElementById("selRequestId").value = -1;
+		}
+		else
+		{
+			document.getElementById("selRequestId").disabled = true;
+		}	
+	}
+	else{
+		if( cat == 'RA_CLIENT'){
+			document.getElementById("selRequestId").disabled = false;
+			document.getElementById("selRequestId").value = -1;
+		}
+		else
+		{
+			document.getElementById("selRequestId").disabled = true;
+		}				
+	}		
+}
+////Function to allow note entry related to Requests on check of Request Assistance-OCE View or Request Assistance-Client View
+function fnCheckReq(){		
+	var cat = document.getElementById("selCategory").value;
+	if(document.getElementById('chkRQOCELead') != null){
+		if(cat == 'RA_OCE' || cat == 'RA_CLIENT'){
+			if(document.getElementById('chkRQClient').checked == false && document.getElementById('chkRQOCELead').checked == false ){
+				alert('Please select Request Assistance checkbox to enter note');	
+				if(cat == 'RA_OCE'){
+					document.getElementById('chkRQOCELead').focus();
+				}
+				else{			
+					document.getElementById('chkRQClient').focus();
+				}
+				return false;				
+			}
+		}	
+	}
+	else{			
+		if(cat == 'RA_CLIENT' && document.getElementById('chkRQClient').checked == false){
+				alert('Please select Request Assistance checkbox to enter note');
+				document.getElementById('chkRQClient').focus();
+			}
+				return false;		
+	}			
+}
+/** code for pagination* */
+$scope.pageSize = 20;
+$scope.index = 0;
+$scope.currentPage = 0;
+$scope.numberOfPages = function(data) {
+	return Math.ceil(data.length / $scope.pageSize);
+}
+$scope.pageSet = function(/* size */) {
+	// $scope.pageSize = size;
+	$scope.array = [];
+	for (var i = 0; i < $scope
+			.numberOfPages($scope.securityScrdata.PendingAppDetails); i++) {
+		$scope.array.push(i);
+	}
+	$scope.currentPage = 0;
+}
+
+$scope.showList = function(index) {
+
+	$scope.index = (Number(index) - 1)
+			* parseInt($scope.pageSize, 10);
+	$scope.currentPage = (Number(index) - 1);
+
+}
+$scope.goToFirstPage = function() {
+	if ($scope.index == 0) {
+		alert(getFirstPageMsg());
+		return;
+	}
+
+	$scope.index = 0;
+	$scope.currentPage = 0;
+}
+$scope.goToLastPage = function() {
+	if ($scope.index == $scope.array.length) {
+		alert(getLastPageMsg());
+		return;
+	}
+
+	//console.log($scope.array.length);
+	index = $scope.array.length;
+	$scope.index = (Number(index) - 1)
+			* parseInt($scope.pageSize, 10);
+	//console.log( $scope.index);
+	$scope.currentPage = index;
+	//console.log($scope.currentPage);
+}
+$scope.goToPrevPage = function() {
+	if ($scope.index == 0) {
+		alert(getFirstPageMsg());
+		return;
+	}
+
+	$scope.index = $scope.index - 20;
+	$scope.currentPage = $scope.currentPage - 1;
+}
+$scope.goToNextPage = function() {
+	if ($scope.index == $scope.array.length-1) {
+		alert(getLastPageMsg());
+		return;
+	}
+
+	$scope.index = $scope.index + 20;
+	$scope.currentPage = $scope.currentPage + 1;
+};
+/** *pagination ends** */
+
+
+function closePopup(){
+	self.close();
+}
+
+
